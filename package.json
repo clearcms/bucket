@@ -28,12 +28,7 @@
     "bucket",
     "clearcms"
   ],
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE",
-    "docs"
-  ],
+  "files": ["dist", "README.md", "LICENSE", "docs"],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
