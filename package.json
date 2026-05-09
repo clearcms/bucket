@@ -1,0 +1,75 @@
+{
+  "name": "@clearcms/bucket",
+  "version": "0.1.0-alpha.0",
+  "description": "Document database in a folder of plain JSON files. Multi-runtime (Node + Bun + Workers), schema-validated, Mongo-flavored API.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "homepage": "https://github.com/clearcms/bucket",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clearcms/bucket.git"
+  },
+  "bugs": {
+    "url": "https://github.com/clearcms/bucket/issues"
+  },
+  "keywords": [
+    "document-database",
+    "json",
+    "filesystem",
+    "embedded",
+    "schema",
+    "mongo",
+    "nosql",
+    "cms",
+    "bucket",
+    "clearcms"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "docs"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./adapters/fs": {
+      "types": "./dist/adapters/fs.d.ts",
+      "import": "./dist/adapters/fs.js"
+    },
+    "./adapters/memory": {
+      "types": "./dist/adapters/memory.d.ts",
+      "import": "./dist/adapters/memory.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "clean": "rm -rf dist"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "ulid": "^2.3.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

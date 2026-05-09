@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Test artefacts
+coverage/
+.vitest-cache/
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Env
+.env
+.env.local
+*.local
+
+# Temporary
+tmp/
+.tmp/
+
+# Examples scratch data
+examples/*/data/
+examples/*/.bucket/
