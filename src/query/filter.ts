@@ -2,7 +2,7 @@
  * Mongo-flavored filter evaluation.
  *
  * Supports: equality on values, plus operators
- *   $eq, $ne, $gt, $gte, $lt, $lte, $in, $nin, $exists, $regex
+ *   $eq, $ne, $gt, $gte, $lt, $lte, $in, $nin, $exists, $regex, $contains
  * Plus logical: $and, $or
  *
  * Filters are evaluated against a document's data field. Top-level keys in
@@ -79,6 +79,10 @@ function matchesOperator<V>(value: unknown, op: FilterOperator<V>): boolean {
   if ("$regex" in op) {
     if (typeof value !== "string" || typeof op.$regex !== "string") return false;
     if (!new RegExp(op.$regex).test(value)) return false;
+  }
+  if ("$contains" in op) {
+    if (!Array.isArray(value)) return false;
+    if (!value.some((element) => deepEqual(element, op.$contains))) return false;
   }
   return true;
 }

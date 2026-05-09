@@ -31,6 +31,7 @@ export type FilterOperator<V> = {
   $nin?: V[];
   $exists?: boolean;
   $regex?: string;
+  $contains?: V extends readonly (infer U)[] ? U : never;
 };
 
 export type FindOptions<T> = {

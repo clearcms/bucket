@@ -10,7 +10,7 @@ Initial prototype release.
 
 ### Added
 - `Bucket` and `Collection<T>` core classes with full CRUD plus `find`, `findOne`, `count`.
-- Mongo-flavored filter operators: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$exists`, `$regex`, plus logical `$and` / `$or`.
+- Mongo-flavored filter operators: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$exists`, `$regex`, `$contains` (array-element match), plus logical `$and` / `$or`.
 - `find` options: `limit`, `skip`, `sort` (with envelope keys `createdAt` / `updatedAt` plus any data field).
 - Schema validation via any Zod schema (parsed on every read and write).
 - Filesystem adapter (`fsAdapter`) — atomic writes via temp-file-rename + fsync, symlink rejection, path-traversal hardening.

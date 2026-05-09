@@ -76,9 +76,8 @@ describe("bucket end-to-end (memory adapter)", () => {
     const published = await posts.find({ status: "published" });
     expect(published).toHaveLength(2);
 
-    const food = await posts.find({ tags: { $in: ["food"] as never } });
-    // $in on array field matches if array contains any of the values; we don't deep-array-search yet.
-    expect(food.length).toBeGreaterThanOrEqual(0); // Permissive — not asserting exact behavior.
+    const food = await posts.find({ tags: { $contains: "food" } });
+    expect(food.map((d) => d.data.title).sort()).toEqual(["A", "B"]);
 
     const notDraft = await posts.find({ status: { $ne: "draft" } });
     expect(notDraft).toHaveLength(2);
@@ -164,6 +163,47 @@ describe("filter operators", () => {
     expect(
       (await nums.find({ label: { $regex: "item-[35]" } })).map((d) => d.data.label).sort(),
     ).toEqual(["item-3", "item-5"]);
+  });
+
+  it("supports $contains on array fields", async () => {
+    const TagSchema = z.object({
+      title: z.string(),
+      tags: z.array(z.string()),
+      flags: z.array(z.object({ key: z.string() })).default([]),
+    });
+    type Tagged = z.infer<typeof TagSchema>;
+    const bucket = await createBucket({ adapter: memoryAdapter() });
+    const docs = bucket.collection<Tagged>("tagged", { schema: TagSchema });
+    await docs.insert({ title: "A", tags: ["food", "essays"], flags: [{ key: "pinned" }] });
+    await docs.insert({ title: "B", tags: ["food"], flags: [] });
+    await docs.insert({ title: "C", tags: ["essays"], flags: [{ key: "draft" }] });
+
+    const food = await docs.find({ tags: { $contains: "food" } });
+    expect(food.map((d) => d.data.title).sort()).toEqual(["A", "B"]);
+
+    const essays = await docs.find({ tags: { $contains: "essays" } });
+    expect(essays.map((d) => d.data.title).sort()).toEqual(["A", "C"]);
+
+    const none = await docs.find({ tags: { $contains: "missing" } });
+    expect(none).toHaveLength(0);
+
+    const pinned = await docs.find({ flags: { $contains: { key: "pinned" } } });
+    expect(pinned.map((d) => d.data.title)).toEqual(["A"]);
+
+    const both = await docs.find({
+      $and: [{ tags: { $contains: "food" } }, { tags: { $contains: "essays" } }],
+    });
+    expect(both.map((d) => d.data.title)).toEqual(["A"]);
+  });
+
+  it("$contains rejects non-array fields", async () => {
+    const bucket = await createBucket({ adapter: memoryAdapter() });
+    const nums = bucket.collection<Num>("nums", { schema: NumSchema });
+    await nums.insert({ n: 1, label: "x" });
+    const result = await nums.find({
+      label: { $contains: "x" } as unknown as { $contains: never },
+    });
+    expect(result).toHaveLength(0);
   });
 
   it("supports $and $or", async () => {

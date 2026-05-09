@@ -267,6 +267,7 @@ A `Filter<T>` is an object whose keys are either fields of `T` or one of the log
 | `$nin` | Field equals none of values in list | `{ status: { $nin: ["archived"] } }` |
 | `$exists` | Field is present (`true`) / absent (`false`) | `{ publishedAt: { $exists: true } }` |
 | `$regex` | String matches regex pattern | `{ title: { $regex: "^Hello" } }` |
+| `$contains` | Array field contains the value (deep-equal on each element) | `{ tags: { $contains: "food" } }` |
 | `$and` | All branches match | `{ $and: [{ status: "published" }, { views: { $gt: 100 } }] }` |
 | `$or` | Any branch matches | `{ $or: [{ status: "draft" }, { status: "review" }] }` |
 
@@ -275,7 +276,8 @@ A `Filter<T>` is an object whose keys are either fields of `T` or one of the log
 - Comparison operators (`$gt`, `$gte`, `$lt`, `$lte`) work on numbers and strings. Other types compare as not-matching.
 - `$regex` uses the JavaScript `RegExp` constructor on the pattern string; pass flags inline (`"(?i)hello"` is **not** supported — use `"[Hh]ello"` or pre-compose).
 - `$exists: true` requires `value !== undefined`. A field set to `null` counts as existing.
-- Equality literals on object/array fields use deep-equal — `{ tags: ["food"] }` matches a document whose `tags` array equals `["food"]` exactly, not a document containing `"food"`.
+- Equality literals on object/array fields use deep-equal — `{ tags: ["food"] }` matches a document whose `tags` array equals `["food"]` exactly, not a document containing `"food"`. To match documents whose array field includes a value, use `$contains`.
+- `$contains` is typed only for array fields; on a non-array field it never matches. The operand is compared to each element with deep-equal, so it works on arrays of objects too: `{ flags: { $contains: { key: "pinned" } } }`.
 
 **Combining.**
 
@@ -497,6 +499,7 @@ type FilterOperator<V> = {
   $nin?: V[];
   $exists?: boolean;
   $regex?: string;
+  $contains?: V extends readonly (infer U)[] ? U : never;
 };
 ```
 
@@ -569,16 +572,18 @@ This avoids the cost of skipping N matches every page.
 
 ### Tagging and querying
 
-Store tags as a string array on the document. Equality on array fields is deep-equal — to match "tag X is one of the document's tags" you currently need to fetch and filter in user code, or denormalise into per-tag boolean fields:
+Store tags as a string array on the document. Equality on array fields is deep-equal, so `{ tags: ["food"] }` only matches documents whose `tags` is exactly `["food"]`. To match documents whose array field _contains_ a value, use `$contains`:
 
 ```ts
 // schema: tags: z.array(z.string())
-// to find docs tagged "food":
-const all = await posts.find({});
-const food = all.filter((p) => p.data.tags.includes("food"));
-```
+// docs tagged "food":
+const food = await posts.find({ tags: { $contains: "food" } });
 
-A first-class array-contains operator is on the roadmap.
+// docs tagged both "food" and "essays":
+const both = await posts.find({
+  $and: [{ tags: { $contains: "food" } }, { tags: { $contains: "essays" } }],
+});
+```
 
 ### Bulk imports
 
