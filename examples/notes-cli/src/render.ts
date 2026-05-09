@@ -44,8 +44,7 @@ export function renderTable(headers: string[], rows: string[][]): string {
   const widths = headers.map((h, i) =>
     Math.max(visibleWidth(h), ...rows.map((r) => visibleWidth(r[i] ?? ""))),
   );
-  const fmt = (cells: string[]) =>
-    cells.map((cell, i) => pad(cell, widths[i] ?? 0)).join("  ");
+  const fmt = (cells: string[]) => cells.map((cell, i) => pad(cell, widths[i] ?? 0)).join("  ");
   const head = c.bold(fmt(headers));
   const sep = c.dim(widths.map((w) => "─".repeat(w)).join("  "));
   const body = rows.map((r) => fmt(r)).join("\n");

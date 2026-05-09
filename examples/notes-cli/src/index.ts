@@ -23,14 +23,7 @@ import { createInterface } from "node:readline";
 import type { Document } from "@clearcms/bucket";
 import { NotFoundError, ValidationError } from "@clearcms/bucket";
 import { type Note, openNotes } from "./notes.js";
-import {
-  c,
-  formatTags,
-  formatTime,
-  renderTable,
-  shortId,
-  shortTitle,
-} from "./render.js";
+import { c, formatTags, formatTime, renderTable, shortId, shortTitle } from "./render.js";
 
 // ---------- argv parser ----------
 
@@ -58,7 +51,9 @@ function parseArgv(argv: string[]): Argv {
       const next = argv[i + 1];
       if (next !== undefined && !next.startsWith("-")) {
         if (repeatable.has(name)) {
-          (multi[name] ??= []).push(next);
+          const existing = multi[name] ?? [];
+          existing.push(next);
+          multi[name] = existing;
         } else {
           flags[name] = next;
         }
@@ -185,24 +180,20 @@ async function cmdAdd(
   tags: string[],
 ): Promise<void> {
   const { notes } = await openNotes(dir);
-  const body =
-    typeof flags.body === "string" ? flags.body : await readStdin();
+  const body = typeof flags.body === "string" ? flags.body : await readStdin();
   const doc = await notes.insert({ title, body, tags });
   process.stdout.write(
     `Added ${c.green(shortId(doc.id))}  ${c.bold(shortTitle(doc.data.title))}\n`,
   );
 }
 
-async function cmdList(
-  dir: string,
-  flags: Record<string, string | boolean>,
-): Promise<void> {
+async function cmdList(dir: string, tagFilters: string[]): Promise<void> {
   const { notes } = await openNotes(dir);
-  const tagFilter = typeof flags.tag === "string" ? flags.tag : undefined;
   const docs = await notes.find({}, { sort: { updatedAt: -1 } });
-  const filtered = tagFilter
-    ? docs.filter((d) => d.data.tags.includes(tagFilter))
-    : docs;
+  const filtered =
+    tagFilters.length > 0
+      ? docs.filter((d) => tagFilters.every((t) => d.data.tags.includes(t)))
+      : docs;
 
   if (filtered.length === 0) {
     process.stdout.write(c.dim("No notes.\n"));
@@ -215,9 +206,7 @@ async function cmdList(
     formatTags(d.data.tags),
     c.dim(formatTime(d.updatedAt)),
   ]);
-  process.stdout.write(
-    `${renderTable(["ID", "TITLE", "TAGS", "UPDATED"], rows)}\n`,
-  );
+  process.stdout.write(`${renderTable(["ID", "TITLE", "TAGS", "UPDATED"], rows)}\n`);
 }
 
 async function cmdShow(dir: string, id: string): Promise<void> {
@@ -262,9 +251,7 @@ async function cmdRm(
   const { notes } = await openNotes(dir);
   const doc = await resolveId(notes, id);
   if (flags.force !== true) {
-    const ok = await confirm(
-      `Delete "${doc.data.title}" (${shortId(doc.id)})? [y/N] `,
-    );
+    const ok = await confirm(`Delete "${doc.data.title}" (${shortId(doc.id)})? [y/N] `);
     if (!ok) {
       process.stdout.write("Aborted.\n");
       return;
@@ -289,9 +276,7 @@ async function cmdFind(dir: string, query: string): Promise<void> {
     formatTags(d.data.tags),
     c.dim(formatTime(d.updatedAt)),
   ]);
-  process.stdout.write(
-    `${renderTable(["ID", "TITLE", "TAGS", "UPDATED"], rows)}\n`,
-  );
+  process.stdout.write(`${renderTable(["ID", "TITLE", "TAGS", "UPDATED"], rows)}\n`);
 }
 
 async function cmdStats(dir: string): Promise<void> {
@@ -343,7 +328,7 @@ async function main(): Promise<number> {
       return 0;
     }
     case "list":
-      await cmdList(dir, argv.flags);
+      await cmdList(dir, tags);
       return 0;
     case "show": {
       const id = argv.positional[0];
